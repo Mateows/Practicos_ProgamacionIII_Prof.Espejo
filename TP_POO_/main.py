@@ -1,6 +1,7 @@
 from figuras import (
     Cuadrado,
     Etiqueta,
+    Exportable,
     Hexagono,
     Lado,
     Pentagono,
@@ -26,7 +27,7 @@ for figura in (triangulo, cuadrado, pentagono, hexagono):
     taller.recibir(figura)
     print(f"Recibido: {figura.exportar()}")
 
-    print()
+print()
 print("=" * 60)
 print("2. Etiquetando lados")
 print("=" * 60)
@@ -34,11 +35,13 @@ print("=" * 60)
 primer_lado_triangulo = triangulo.lados[0]
 primer_lado_cuadrado = cuadrado.lados[0]
 
-primer_lado_triangulo.etiqueta = Etiqueta("hipotenusa aproximada")
-primer_lado_cuadrado.etiqueta = Etiqueta("borde norte")
+etiqueta_triangulo = Etiqueta("hipotenusa aproximada")
+etiqueta_cuadrado = Etiqueta("borde norte")
+primer_lado_triangulo.etiqueta = etiqueta_triangulo
+primer_lado_cuadrado.etiqueta = etiqueta_cuadrado
 
-print(f"Lado del triángulo etiquetado como: {primer_lado_triangulo.etiqueta.texto}")
-print(f"Lado del cuadrado etiquetado como: {primer_lado_cuadrado.etiqueta.texto}")
+print(f"Lado del triángulo etiquetado como: {etiqueta_triangulo.texto}")
+print(f"Lado del cuadrado etiquetado como: {etiqueta_cuadrado.texto}")
 
 print()
 print("=" * 60)
@@ -46,12 +49,12 @@ print("3. Exportando todo junto con un PlanoCAD (duck typing)")
 print("=" * 60)
 
 plano = PlanoCAD("PLANO-TALLER-01")
-items_a_exportar = list(taller.inventario()) + [plano]
+items_a_exportar: list[Exportable] = list(taller.inventario()) + [plano]
 
 for linea in exportar_todo(items_a_exportar):
     print(linea)
 
-    print()
+print()
 print("=" * 60)
 print("4. Inventario del taller")
 print("=" * 60)
@@ -87,7 +90,7 @@ print("*" * 100)
 print("Falla temprana: instanciar Poligono directamente sin lados_esperados()...")
 print("*" * 100)
 try:
-    Poligono("x", "y")
+    Poligono("x", "y")  # type: ignore[abstract]  # intencional: demuestra la falla temprana
 except TypeError as error:
     print(f"  -> TypeError esperado: {error}")
-    print("*" * 100)
+print("*" * 100)
