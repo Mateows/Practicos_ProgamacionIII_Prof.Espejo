@@ -1,4 +1,6 @@
 # Mini TP — Kiosco (FastAPI)
+## Integrantes: Amanda Pagano, Lucas Avila, Mateo Liendo
+
 
 Catálogo de productos con paginación, contratos con Pydantic, errores de dominio
 propios y compra concurrente segura. Requiere **Python 3.11+** (se usa
