@@ -37,7 +37,7 @@ async def listar_producto(
 
 
 
-@app.post("productos", response_model=Producto, status_code=201)
+@app.post("/productos", response_model=Producto, status_code=201)
 async def crear_producto(
     producto_in: ProductoCreate,
     repo: Annotated[ProductoRepositorio, Depends(get_repo)],
