@@ -17,7 +17,7 @@ class ProductoCreate(BaseModel):
         if self.stock_reservado > self.stock:
             raise ValueError("El stock reservado no puede ser superar al stock")
         return self
-    producto : bool = True
+    habilitado : bool = True
     categoria: Optional[str] = None
 
 
@@ -35,7 +35,7 @@ class Producto(BaseModel):
         if self.stock_reservado > self.stock:
             raise ValueError("El stock reservado no puede ser superar al stock")
         return self
-    producto : bool = True
+    habilitado : bool = True
     categoria: Optional[str] = None
 
 
