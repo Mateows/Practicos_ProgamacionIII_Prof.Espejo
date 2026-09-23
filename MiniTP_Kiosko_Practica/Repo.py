@@ -47,16 +47,20 @@ class ProductoRepositorio:
         """R10: 'cambios' ya viene filtrado con exclude_unset=True desde main.py,
         asi que solo trae las claves que el cliente realmente envio (incluido None
         si lo envio explicito). Reconstruir el Producto completo con esos cambios
-        vuelve a correr el @model_validator de stock sobre el estado final."""
-        await asyncio.sleep(0.05)
-        for i, p in enumerate(self.productos):
-            if p.id == producto_id:
-                datos = p.model_dump()
-                datos.update(cambios)
-                actualizado = Producto(**datos)
-                self.productos[i] = actualizado
-                return actualizado
-        raise ProductoNoEncontrado(producto_id)
+        vuelve a correr el @model_validator de stock sobre el estado final.
+
+        Usa el mismo lock por producto que comprar(), para que un PATCH y una
+        compra concurrentes sobre el mismo producto no se pisen entre si."""
+        async with self._lock_de(producto_id):
+            await asyncio.sleep(0.05)
+            for i, p in enumerate(self.productos):
+                if p.id == producto_id:
+                    datos = p.model_dump()
+                    datos.update(cambios)
+                    actualizado = Producto(**datos)
+                    self.productos[i] = actualizado
+                    return actualizado
+            raise ProductoNoEncontrado(producto_id)
 
 
     async def comprar(self, producto_id: int, cantidad: int) -> Producto:

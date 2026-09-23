@@ -2,6 +2,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request, Response
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 from typing_extensions import Annotated
 from Producto import Producto, ProductoActualizar, ProductoCreate, CompraCrear
 from Repo import ProductoRepositorio
@@ -33,6 +34,23 @@ async def manejar_error_dominio(request: Request, exc: ErrorDominio):
     return JSONResponse(
         status_code=exc.status_code,
         content={"error": exc.codigo, "mensaje": exc.mensaje},
+    )
+
+
+@app.exception_handler(ValidationError)
+async def manejar_error_validacion(request: Request, exc: ValidationError):
+    # Repo.actualizar reconstruye el Producto a mano (Producto(**datos)) fuera
+    # del parseo automatico de FastAPI, asi que un estado invalido (ej: el PATCH
+    # deja stock_reservado > stock, o pisa un campo obligatorio con null) no pasa
+    # por RequestValidationError sino por un pydantic.ValidationError comun, que
+    # sin este handler quedaba sin atrapar y volaba como 500 en blanco.
+    detalle = "; ".join(
+        f"{'.'.join(str(parte) for parte in error['loc']) or 'body'}: {error['msg']}"
+        for error in exc.errors()
+    )
+    return JSONResponse(
+        status_code=422,
+        content={"error": "datos_invalidos", "mensaje": detalle},
     )
 
 
