@@ -1,9 +1,10 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, model_validator
+from sqlmodel import Field, SQLModel
 from typing import Optional
 from decimal import Decimal
 
 
-class ProductoBase(BaseModel):
+class ProductoBase(SQLModel):
     """Campos y validaciones comunes a ProductoCreate y Producto (R7: evita duplicar el validador)."""
 
     nombre: str = Field(..., min_length=1, max_length=120)
@@ -26,9 +27,13 @@ class ProductoCreate(ProductoBase):
     pass
 
 
-class Producto(ProductoBase):
-    """Modelo de lectura: lo que devuelve la API, incluye el id asignado por el servidor (R5)."""
-    id: int
+class Producto(ProductoBase, table=True):
+    """Tabla de productos y modelo de lectura: incluye el id asignado por la base (R5).
+
+    Ojo: SQLModel NO corre las validaciones al instanciar un modelo con table=True,
+    por eso el repositorio valida el estado final contra ProductoBase antes de guardar.
+    """
+    id: Optional[int] = Field(default=None, primary_key=True)
 
 
 class ProductoActualizar(BaseModel):

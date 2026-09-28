@@ -1,6 +1,5 @@
-import asyncio
 from contextlib import asynccontextmanager
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Query, Request, Response
+from fastapi import BackgroundTasks, Depends, FastAPI, Query, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from typing_extensions import Annotated
@@ -8,16 +7,16 @@ from Producto import Producto, ProductoActualizar, ProductoCreate, CompraCrear
 from Repo import ProductoRepositorio
 from errores import ErrorDominio, ProductoNoEncontrado
 from comparacion import router as comparacion_router
+from db import SessionLocal, crear_tablas, engine
 
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global repositorio_global
-
-    repositorio_global = ProductoRepositorio() #Inicio
+    await crear_tablas() #Inicio: crea la tabla si no existe
+    app.state.repositorio = ProductoRepositorio(SessionLocal) #R4: una sola instancia para toda la app
     yield
-    repositorio_global = None #Cierro
+    await engine.dispose() #Cierro: libera las conexiones del pool
 
 
 
@@ -39,8 +38,8 @@ async def manejar_error_dominio(request: Request, exc: ErrorDominio):
 
 @app.exception_handler(ValidationError)
 async def manejar_error_validacion(request: Request, exc: ValidationError):
-    # Repo.actualizar reconstruye el Producto a mano (Producto(**datos)) fuera
-    # del parseo automatico de FastAPI, asi que un estado invalido (ej: el PATCH
+    # Repo.actualizar revalida el estado final a mano (ProductoBase.model_validate)
+    # fuera del parseo automatico de FastAPI, asi que un estado invalido (ej: el PATCH
     # deja stock_reservado > stock, o pisa un campo obligatorio con null) no pasa
     # por RequestValidationError sino por un pydantic.ValidationError comun, que
     # sin este handler quedaba sin atrapar y volaba como 500 en blanco.
@@ -59,10 +58,9 @@ def notificar_compra(producto_id: int, cantidad: int) -> None:
     print(f"[notificacion] compra confirmada: producto={producto_id} cantidad={cantidad}")
 
 
-def get_repo() -> ProductoRepositorio:
-    if repositorio_global is None:
-        raise HTTPException(status_code=500, detail="Repositorio no inicializado")
-    return repositorio_global
+def get_repo(request: Request) -> ProductoRepositorio:
+    # R2/R4: devuelve la unica instancia creada en el lifespan.
+    return request.app.state.repositorio
 
 
 
@@ -73,9 +71,9 @@ async def listar_producto(
     offset: int = Query(0, ge=0),
     limit: int = Query(10, ge=1, le=100),
 ):
-    productos = await repo.listar()
-    response.headers["X-Total-Count"] = str(len(productos))  # R8: total en un header, no en el body
-    return productos[offset: offset + limit]
+    productos, total = await repo.listar(offset, limit)
+    response.headers["X-Total-Count"] = str(total)  # R8: total en un header, no en el body
+    return productos
 
 
 

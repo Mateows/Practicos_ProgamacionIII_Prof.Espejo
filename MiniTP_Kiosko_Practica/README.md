@@ -1,7 +1,8 @@
 # Mini TP — Kiosco (FastAPI)
 Catálogo de productos con paginación, contratos con Pydantic, errores de dominio
 propios y compra concurrente segura. Requiere **Python 3.11+** (se usa
-`asyncio.TaskGroup` y `except*`).
+`asyncio.TaskGroup` y `except*`) y **PostgreSQL** (los productos se guardan
+en la base `kiosco_db`, usando SQLModel de forma asincronica con asyncpg).
 
 ## Instalación
 
@@ -12,6 +13,38 @@ venv\Scripts\activate        # Windows
 # source venv/bin/activate   # Linux/Mac
 pip install -r requirements.txt
 ```
+
+## Base de datos
+
+1. Crear la base (una sola vez), por ejemplo con `psql`:
+
+   ```bash
+   psql -U postgres -c "CREATE DATABASE kiosco_db;"
+   ```
+
+   La tabla `producto` la crea la app sola al arrancar (si no existe).
+
+2. Configurar la variable de entorno `DATABASE_URL` con tu usuario y contraseña
+   **en la misma terminal donde vas a correr el server** (la contraseña nunca
+   se escribe en el codigo):
+
+   ```bash
+   # Git Bash
+   export DATABASE_URL="postgresql+asyncpg://postgres:TU_PASSWORD@localhost:5432/kiosco_db"
+   ```
+
+   ```powershell
+   # PowerShell
+   $env:DATABASE_URL = "postgresql+asyncpg://postgres:TU_PASSWORD@localhost:5432/kiosco_db"
+   ```
+
+   ```bat
+   :: cmd
+   set DATABASE_URL=postgresql+asyncpg://postgres:TU_PASSWORD@localhost:5432/kiosco_db
+   ```
+
+   Si no se setea, `db.py` usa un placeholder sin credenciales y el server no
+   va a poder conectarse.
 
 ## Correr el servidor
 
@@ -57,3 +90,8 @@ El script crea un producto con stock=10 y dispara 6 compras de 2 unidades
 stock). Algunas compras van a fallar con `stock_insuficiente`, pero el stock
 final del servidor siempre queda consistente (nunca negativo, nunca "pisado"
 por una compra que leyó un valor viejo).
+
+> Como ahora los datos persisten en PostgreSQL, **cada corrida del script deja
+> un producto nuevo guardado** en la base ("Producto de prueba - concurrencia").
+> La proteccion con `asyncio.Lock` vale para un solo proceso: correr uvicorn
+> sin `--workers` (un unico worker).
