@@ -4,6 +4,23 @@ propios y compra concurrente segura. Requiere **Python 3.11+** (se usa
 `asyncio.TaskGroup` y `except*`) y **PostgreSQL** (los productos se guardan
 en la base `kiosco_db`, usando SQLModel de forma asincronica con asyncpg).
 
+## Sobre este proyecto
+
+Este TP se hizo en dos etapas:
+
+### Parte 1 — Fundamentos, contratos y asincronismo (Capítulos 1 a 3)
+Se construyó el Kiosco completo (requisitos R1 a R14): fundamentos de FastAPI
+y ASGI, contratos con Pydantic, y ejecución asincrónica. En esta etapa los
+productos se guardaban en una **lista en memoria** — al reiniciar el
+servidor, los datos se perdían.
+
+### Parte 2 — Persistencia en PostgreSQL
+Se migró el almacenamiento en memoria a **PostgreSQL**, usando SQLModel de
+forma asincrónica (con `asyncpg`). Los datos ahora persisten entre
+reinicios del servidor. Todo el comportamiento de la Parte 1 se mantuvo
+intacto: validaciones, paginación, formato de errores propio, y la
+protección contra condiciones de carrera al comprar.
+
 ## Instalación
 
 ```bash
